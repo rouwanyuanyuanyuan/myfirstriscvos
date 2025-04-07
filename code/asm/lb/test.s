@@ -21,7 +21,7 @@ stop:
 	j stop			# Infinite loop to stop execution
 
 _array:	
-	.byte 0x11
+	.byte 0x11 # Define array with two elements
 	.byte 0xff
 
 	.end			# End of file
