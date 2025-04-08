@@ -3,6 +3,13 @@ display/z $t1
 display/z $t2
 display/z $t3
 display/z $t4
+display/z $a0
+display/z $a1
+display/z $s0
+display/z $s1
+display/z $s2
+display/z $ra
+display/z $sp
 
 set disassemble-next-line on
 b _start
