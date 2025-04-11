@@ -48,7 +48,6 @@ aa_bb:
 	# sum will be stored in s2 and is initialized as zero
 	li s2, 0
 
-	mv a0, s0
 	jal square
 	add s2, s2, a0
 
