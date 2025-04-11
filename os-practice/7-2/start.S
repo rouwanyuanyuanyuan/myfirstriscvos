@@ -4,7 +4,6 @@
 	.equ	STACK_SIZE, 1024
 
 	.global	_start
-	.extern start_kernel
 
 	.text
 _start:
