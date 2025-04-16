@@ -22,7 +22,6 @@ void start_kernel(void)
 		int flag = 1;
 		while (flag)
 		{
-			page_test();
 			test_malloc();
 			flag = 0;
 		}

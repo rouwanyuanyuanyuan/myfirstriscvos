@@ -1,9 +1,9 @@
 #include "os.h"
 
 typedef struct MallocBlock {
-    size_t size; //大小
-    int free; //是否空闲
-    struct MallocBlock *next; //下一块
+    size_t size;              // 4 字节（RV32）
+    struct MallocBlock *next; // 4 字节
+    int free;                 // 4 字节
 }MallocBlock;
 
 #define BLOCK_SIZE sizeof(MallocBlock)
@@ -23,24 +23,39 @@ void malloc_init(){
     printf("freelist: %p\n", freelist);
 }
 
+void print_freelist() {
+    printf("=== freelist dump ===\n");
+    MallocBlock *curr = freelist;
+    int i = 0;
+    while (curr) {
+        printf("Block %d @header %p | BLOCK_SIZE: %d  Address: %p  Size: %d  Free: %d  Next: %p\n",
+            i++, curr, BLOCK_SIZE, (void *)((char *)curr + BLOCK_SIZE), curr->size, curr->free, curr->next);        
+        curr = curr->next;
+    }
+    printf("=====================\n");
+}
+
 void *malloc(size_t size){
     MallocBlock *curr = freelist;
     while(curr){ //因为是链表形式的，所以每次都要从头开始找，直到找到合适的块
         if (curr->free)
         {
             if(curr->size >= size){
-                if (curr->size - size >= BLOCK_SIZE + 8) //如果还有剩余空间（注意！这里的剩余空间需要包含一个header和一个字节（因为malloc的精度是一个字节）的大小） 
+                if (curr->size - size >= BLOCK_SIZE + 4) //如果还有剩余空间（注意！这里的剩余空间需要包含一个header和一个字节（因为malloc的精度是一个字节）的大小） 
                 { 
                     MallocBlock *new = (MallocBlock *)((char *)curr + BLOCK_SIZE + size);
                     //这里进行字节转化是因为curr是一个指向MallocBlock的指针，不这么做它加上size会直接跳过相应的块而不是字节
                     new->size = curr->size - size - BLOCK_SIZE;
                     new->free = 1;
-                    new->next = NULL;
+                    new->next = curr->next;
                     curr->next = new;
+                    printf("split block\n");
+                    printf("new block: %p\n", curr->next);
                 }
                 curr->free = 0;
                 curr->size = size;
-                return (void *)(curr + BLOCK_SIZE); //返回的时候返回实际分配的地址的开始，而不是返回header的地址
+                print_freelist();
+                return (void *)((char *)curr + BLOCK_SIZE); //返回的时候返回实际分配的地址的开始，而不是返回header的地址
             }
         }
         curr = curr->next;
@@ -49,21 +64,25 @@ void *malloc(size_t size){
     return NULL;
 }
 
-void free(void *ptr){
+void merge(){
     MallocBlock *curr = freelist;
-    MallocBlock *prev = NULL;
-    while(curr){
-        if (curr->next == (MallocBlock *)ptr - BLOCK_SIZE)
+    while(curr->next){
+        if (curr->free && curr->next->free)
         {
-            prev = curr;
-            prev->next = curr->next->next;
-            curr->next->free = 1;
-            curr->next->next = NULL;
-            break;
+            curr->size += curr->next->size + BLOCK_SIZE;
+            curr->next = curr->next->next;
         }
-        
+        curr = curr->next;
     }
 }
+
+void free(void *ptr){
+    MallocBlock *block = (MallocBlock *)((char *)ptr - BLOCK_SIZE);
+    block->free = 1;
+    merge();
+}
+
+
 
 void test_malloc(){
     printf("malloc test\n");
@@ -74,4 +93,7 @@ void test_malloc(){
     void *ptr3 = malloc(30);
     printf("ptr3: %p\n", ptr3);
     free(ptr1);
+    print_freelist();
+    free(ptr2);
+    print_freelist();
 }
